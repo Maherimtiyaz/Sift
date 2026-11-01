@@ -1,0 +1,14 @@
+.env
+.env.local
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.coverage
+next-env.d.ts
+*.zip
+*.log
+.DS_Store
