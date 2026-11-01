@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sift: voice note to everything</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8f5ee;--ink:#0d2a24;--mute:#4f6f66;--card:#ffffffb0;--line:#0d2a2426;--task:#12894a;--cal:#b34707;--msg:#6a3ddb;--dark:0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1f1c;--ink:#e9fff6;--mute:#8fb5a9;--card:#ffffff0f;--line:#ffffff20;--task:#7dffa8;--cal:#ff9f5a;--msg:#b99bff;--dark:1}}
+:root[data-theme="dark"]{--bg:#0a1f1c;--ink:#e9fff6;--mute:#8fb5a9;--card:#ffffff0f;--line:#ffffff20;--task:#7dffa8;--cal:#ff9f5a;--msg:#b99bff;--dark:1}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Outfit",system-ui,sans-serif;min-height:100vh}
+button,textarea{font:inherit;color:inherit}
+header{display:flex;justify-content:space-between;align-items:center;max-width:1080px;margin:0 auto;padding:20px 20px 0}
+.logo{font:800 28px "Syne",system-ui,sans-serif;letter-spacing:-.04em}
+#status{color:var(--mute);font-size:14px;min-height:21px}
+.stage{position:relative;height:min(380px,92vw);display:grid;place-items:center;transition:height .8s cubic-bezier(.7,0,.2,1)}
+.orbwrap{position:relative;width:min(360px,92vw);aspect-ratio:1;transition:width .8s cubic-bezier(.7,0,.2,1)}
+canvas{width:100%;height:100%;display:block;pointer-events:none}
+#mic{position:absolute;inset:0;border:0;background:none;border-radius:50%;cursor:pointer;display:grid;place-items:center}
+#mic:focus-visible{outline:3px solid var(--ink);outline-offset:-6px}
+.core{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:#ffffff26;border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .25s}
+#mic:hover .core{transform:scale(1.07)}#mic:active .core{transform:scale(.94)}
+.core svg{width:30px;height:30px;fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ico-stop{display:none}.ico-stop rect{fill:var(--ink)}
+[data-state=listening] .ico-mic{display:none}[data-state=listening] .ico-stop{display:block}
+[data-state=listening] .core{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.1)}}
+[data-state=thinking] #mic,[data-state=done] #mic{pointer-events:none}
+[data-state=thinking] .core{opacity:.0}[data-state=done] .core{opacity:0}
+[data-state=done] .stage{height:104px}[data-state=done] .orbwrap{width:92px}
+.intro{text-align:center;padding:0 20px;max-width:640px;margin:0 auto}
+h1{font:800 clamp(30px,6.4vw,52px)/1.02 "Syne",system-ui,sans-serif;letter-spacing:-.045em;margin:0 0 12px}
+.intro p{margin:0;color:var(--mute)}
+[data-state=listening] h1,[data-state=thinking] h1,[data-state=done] .intro{display:none}
+#live{max-width:640px;margin:14px auto 0;padding:0 20px;text-align:center;font-size:18px;min-height:56px}
+#live i{font-style:normal;color:var(--mute)}
+[data-state=done] #live{display:none}
+.alt{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 18px;cursor:pointer;transition:transform .2s,border-color .2s}
+.btn:hover{border-color:var(--ink)}.btn:active{transform:scale(.96)}
+.btn:focus-visible,.chk:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+[data-state=listening] .alt,[data-state=thinking] .alt,[data-state=done] .alt{display:none}
+#typed{display:block;width:min(560px,calc(100% - 40px));margin:16px auto 0;min-height:120px;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:14px;resize:vertical}
+#typedGo{display:block;margin:12px auto 0}
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1080px;margin:8px auto 0;padding:0 20px}
+@media (max-width:860px){.lanes{grid-template-columns:1fr}}
+.lane{border:1px solid var(--line);background:var(--card);border-radius:26px;padding:20px;animation:rise .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d)}
+@keyframes rise{from{opacity:0;filter:blur(10px);transform:translateY(36px) scale(.94) rotate(-1.5deg)}60%{filter:blur(0)}}
+.lh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.dot{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fff9,var(--a) 60%);box-shadow:0 0 14px var(--a)}
+.lh h2{font:700 20px "Syne",system-ui,sans-serif;letter-spacing:-.02em;margin:0;flex:1}
+.n{color:var(--mute);font-size:14px}
+.item{display:flex;gap:12px;padding:12px;border-radius:14px;border:1px solid var(--line);margin-bottom:8px;animation:rise .5s both;animation-delay:calc(var(--d) + var(--i)*90ms + 250ms)}
+.chk{flex:none;width:22px;height:22px;margin-top:2px;border-radius:7px;border:2px solid var(--a);background:none;cursor:pointer;display:grid;place-items:center;transition:background .2s,transform .2s}
+.chk:active{transform:scale(.85)}.chk[aria-checked=true]{background:var(--a)}
+.chk[aria-checked=true]::after{content:"";width:6px;height:11px;border:solid var(--bg);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.chk[aria-checked=true]~.tx{text-decoration:line-through;color:var(--mute)}
+.tx{flex:1;min-width:0;overflow-wrap:anywhere}.sub{display:block;color:var(--mute);font-size:14px}
+.when{color:var(--a);font-weight:500;font-size:14px;display:block}
+.item a{color:var(--ink);font-size:14px}
+.draft textarea{width:100%;min-height:150px;border:0;background:none;resize:vertical;padding:0;line-height:1.5}
+.draft .to{color:var(--mute);font-size:14px;margin-bottom:6px}
+.draft .btn{padding:6px 14px;font-size:14px;margin-top:6px}
+.empty{color:var(--mute);font-size:15px;padding:6px 2px}
+.foot{max-width:1080px;margin:18px auto 40px;padding:0 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+details{flex:1;min-width:240px;color:var(--mute);font-size:15px}summary{cursor:pointer}details p{margin:8px 0 0}
+main{padding-bottom:120px}
+.foot{flex-direction:column;align-items:flex-start}
+.dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));pointer-events:none;z-index:5}
+.dockbtn{pointer-events:auto;min-width:min(320px,100%);min-height:60px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);font:700 18px "Syne",system-ui,sans-serif;cursor:pointer;box-shadow:0 10px 30px #0006;transition:transform .2s,background .3s}
+.dockbtn:active{transform:scale(.96)}.dockbtn:disabled{opacity:.6}.dockbtn:focus-visible{outline:3px solid var(--task);outline-offset:3px}
+[data-state=listening] .dockbtn{background:var(--msg);color:#fff}
+.summary{text-align:center;margin:6px 0 12px;color:var(--mute)}
+.tabs{display:none;gap:6px;margin:0 20px 12px;padding:4px;border:1px solid var(--line);border-radius:999px}
+.tab{flex:1;min-height:44px;border:0;border-radius:999px;background:none;cursor:pointer}
+.tab[aria-selected=true]{background:var(--ink);color:var(--bg)}
+@media (max-width:860px){.tabs{display:flex}.lane{display:none}.lane.on{display:block}}
+.said{max-width:1080px;margin:0 auto 12px;padding:0 20px}.said p{margin:0;max-height:5.5em;overflow:auto;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:12px 14px;color:var(--mute)}
+mark{background:var(--cal);color:#101010;border-radius:4px;padding:0 3px}
+.err{max-width:560px;margin:14px auto 0;padding:12px 16px;border:1px solid var(--msg);border-radius:16px;text-align:center}
+[data-state=listening] .err,[data-state=thinking] .err,[data-state=done] .err{display:none}
+.item.draft{display:block}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ibtn{min-height:36px;border:1px solid var(--line);background:none;border-radius:10px;padding:4px 10px;font-size:14px;cursor:pointer;color:var(--mute)}
+.ibtn:hover{color:var(--ink);border-color:var(--ink)}.ibtn:focus-visible{outline:2px solid var(--ink)}
+.tx [contenteditable]{display:block;border-radius:6px;outline-offset:3px}.tx [contenteditable]:focus{outline:2px solid var(--a)}
+input.when{font:inherit;background:none;border:1px solid var(--line);border-radius:8px;padding:2px 6px;margin:4px 0;color:inherit;color-scheme:light dark;max-width:100%}
+.chk{position:relative}.chk::before{content:"";position:absolute;inset:-11px}
+.lanes.still .lane,.lanes.still .item{animation:none}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 8px 8px 16px;border-radius:999px;z-index:6;display:flex;align-items:center;gap:8px}
+.toast .btn{padding:4px 12px;background:var(--bg);color:var(--ink)}
+#hist{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main id="app" data-state="idle">
+<header><span class="logo">sift</span><span id="status" role="status" aria-live="polite"></span></header>
+<section class="stage"><div class="orbwrap"><canvas id="orb" width="360" height="360"></canvas>
+<button id="mic" aria-label="Start recording"><span class="core">
+<svg class="ico-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+<svg class="ico-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2.5"/></svg></span></button></div></section>
+<div class="intro"><h1>Say it messy. Get it sorted.</h1><p>Tap the orb and ramble about your day. Tasks, calendar items and a draft message come out the other side.</p></div>
+<div id="live"></div><div id="err" class="err" role="alert" hidden></div>
+<div class="alt"><button class="btn" id="sample">Play a sample ramble</button><button class="btn" id="typeBtn">Type instead</button></div>
+<div id="typeBox" hidden><textarea id="typed" placeholder="Type or paste a messy note…" aria-label="Your note"></textarea><button class="btn solid" id="typedGo">Sort it out</button></div>
+<section class="said" id="saidCard" hidden><p id="said" tabindex="0" aria-label="What you said"></p></section><p class="summary" id="summary" aria-live="polite" hidden></p><div class="tabs" id="tabs" role="tablist" hidden></div><section class="lanes" id="lanes" hidden></section>
+<div class="foot" id="foot" hidden><span class="n">Earlier this session</span><div id="hist"></div></div>
+<div class="dock"><button class="dockbtn" id="dock" type="button">Tap to record</button></div><div id="toast" class="toast" role="status" hidden></div></main>
+<script>
+const $=s=>document.querySelector(s), app=$('#app'), cv=$('#orb'), ctx=cv.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S={state:'idle',level:0,target:0,base:'',raw:'',interim:'',sim:false,hist:[],text:'',cur:null};
+let C={}, stream, ac, an, buf, rec, timer, t0, sampleFn;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function readColors(){const g=getComputedStyle(document.documentElement);C={dark:g.getPropertyValue('--dark').trim()==='1',cols:['--task','--cal','--msg'].map(k=>g.getPropertyValue(k).trim())}}
+readColors();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readColors);
+function rgba(h,a){const n=parseInt(h.slice(1,7),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
+function setState(s){S.state=s;app.dataset.state=s;const dk=$('#dock');dk.textContent={idle:'Tap to record',listening:'Stop',thinking:'Sorting…',done:'New note'}[s];dk.disabled=s==='thinking';$('#mic').setAttribute('aria-label',s==='listening'?'Stop recording':'Start recording')}
+function status(m){$('#status').textContent=m}
+/* orb */
+function frame(ts){const t=ts/1000,W=360,c=W/2;S.level+=(S.target-S.level)*.18;
+ if(S.sim)S.target=.25+.2*Math.abs(Math.sin(t*3.1))+.15*Math.abs(Math.sin(t*7.3));
+ ctx.clearRect(0,0,W,W);const m=S.state,k=reduce?.4:1;
+ const amp=k*(m==='listening'?.05+S.level*.3:m==='thinking'?.13:.05),spd=m==='thinking'?2.6:m==='listening'?1.3:.5;
+ ctx.globalCompositeOperation=C.dark?'lighter':'source-over';
+ for(let i=0;i<3;i++){ctx.beginPath();const base=96+i*7+(m==='listening'?S.level*30:0);
+  for(let j=0;j<=96;j++){const a=j/96*Math.PI*2,n=Math.sin(a*2+t*spd+i*2)*.5+Math.sin(a*3-t*spd*1.3+i)*.35+Math.sin(a*5+t*spd*.7-i*3)*.15,r=base*(1+amp*n*2.2);
+   const x=c+Math.cos(a)*r,y=c+Math.sin(a)*r;j?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+  ctx.closePath();const ox=Math.cos(t*.6+i*2.1)*22,oy=Math.sin(t*.5+i*2.1)*22,g=ctx.createRadialGradient(c+ox,c+oy,8,c,c,135);
+  g.addColorStop(0,rgba(C.cols[i],C.dark?.6:.75));g.addColorStop(1,rgba(C.cols[i],0));ctx.fillStyle=g;ctx.fill()}
+ ctx.globalCompositeOperation='source-over';if(m==='listening'&&!reduce)for(let r=0;r<3;r++){const p=(t*.45+r/3)%1;ctx.beginPath();ctx.arc(c,c,104+p*76,0,6.283);ctx.strokeStyle=rgba(C.cols[r],(1-p)*.4);ctx.lineWidth=2;ctx.stroke()}
+ if(an&&S.state==='listening'){an.getByteTimeDomainData(buf);let s=0;for(const v of buf){const d=(v-128)/128;s+=d*d}S.target=Math.min(1,Math.sqrt(s/buf.length)*5)}
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+/* live transcript */
+const full=()=>(S.base+' '+S.raw).trim();
+function renderLive(){const l=$('#live');l.textContent='';l.append(full()+' ');const i=document.createElement('i');i.textContent=S.interim;l.append(i)}
+function tick(){const s=Math.floor((Date.now()-t0)/1000);status('Listening '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0'))}
+/* recording */
+function fallback(msg){setState('idle');status('');const e=$('#err');e.textContent=msg;e.hidden=false;$('#typeBox').hidden=false;$('#typed').focus()}
+async function start(){S.base=S.raw=S.interim='';renderLive();$('#err').hidden=true;$('#typeBox').hidden=true;
+ try{stream=await navigator.mediaDevices.getUserMedia({audio:true});ac=new AudioContext();const src=ac.createMediaStreamSource(stream);an=ac.createAnalyser();an.fftSize=512;buf=new Uint8Array(an.fftSize);src.connect(an)}
+ catch(e){return fallback('The microphone isn’t available here. Type your note or play the sample.')}
+ if(SR){rec=new SR();rec.continuous=true;rec.interimResults=true;rec.lang=navigator.language||'en-US';
+  rec.onresult=e=>{let f='',n='';for(let i=0;i<e.results.length;i++){const r=e.results[i];(r.isFinal?f+=r[0].transcript+' ':n+=r[0].transcript)}S.raw=f.trim();S.interim=n;renderLive()};
+  rec.onend=()=>{if(rec){S.base=full();S.raw=S.interim='';try{rec.start()}catch(_){}}};rec.start()}
+ else $('#live').textContent='Live captions aren’t supported in this browser. Use Type instead.';
+ setState('listening');t0=Date.now();tick();timer=setInterval(tick,500);wakeOn();navigator.vibrate&&navigator.vibrate(18)}
+function stop(){clearInterval(timer);releaseWake();navigator.vibrate&&navigator.vibrate(18);const r=rec;rec=null;try{r&&r.stop()}catch(_){}
+ stream&&stream.getTracks().forEach(t=>t.stop());ac&&ac.close();an=null;S.target=0;
+ const txt=(full()+' '+S.interim).trim();txt?process(txt):fallback('I didn’t catch anything. Try again or type your note.')}
+$('#mic').onclick=()=>S.state==='listening'?stop():S.state==='idle'&&start();
+$('#typeBtn').onclick=()=>{$('#typeBox').hidden=false;$('#typed').focus()};
+$('#typedGo').onclick=()=>{const v=$('#typed').value.trim();v?process(v):status('Write something first.')};
+$('#sample').onclick=()=>{if(S.state!=='idle')return;const words=`Okay so tomorrow I need to finish the API docs before the standup at 10, and I should email Riya about the invoice, tell her I’ll send it by Friday. Oh and dentist appointment Thursday at 4 pm. Also buy a birthday gift for Dad, and renew the domain before it expires. Right, and ping Arjun that the demo moved to Monday afternoon.`.split(' ');
+ S.base=S.raw=S.interim='';renderLive();$('#typeBox').hidden=true;S.sim=true;setState('listening');t0=Date.now();tick();timer=setInterval(tick,500);
+ let i=0;const iv=setInterval(()=>{S.raw=words.slice(0,++i).join(' ');renderLive();if(i>=words.length){clearInterval(iv);setTimeout(()=>{S.sim=false;S.target=0;clearInterval(timer);process(full())},500)}},reduce?5:130)};
+const KEYS=['tasks','events','messages'],LBL={tasks:'task',events:'event',messages:'message'},TX={tasks:x=>x.text||'',events:x=>x.title||'',messages:x=>x.body||''};
+const TXset=(k,x,v)=>{if(k==='tasks')x.text=v;else if(k==='events')x.title=v;else x.body=v};
+let DATA={tasks:[],events:[],messages:[]},TAB='tasks',wake;
+const cap=k=>k[0].toUpperCase()+k.slice(1),save=()=>{if(S.cur)S.cur.data=JSON.stringify(DATA)};
+async function wakeOn(){try{wake=await navigator.wakeLock.request('screen')}catch(_){}}
+function releaseWake(){try{wake&&wake.release()}catch(_){}wake=null}
+function stages(){const L=['Reading your ramble…','Finding dates and times…','Drafting your messages…'];let i=0;const go=()=>{$('#live').textContent=L[Math.min(i++,2)]};go();S.st=setInterval(go,1400)}
+function toast(msg,undo){const t=$('#toast');t.textContent=msg;if(undo){const b=h('button','btn','Undo');b.onclick=()=>{DATA=JSON.parse(undo);t.hidden=true;render(DATA,false)};t.append(b)}t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{t.hidden=true},6000)}
+function move(k,i,to){const before=JSON.stringify(DATA),x=DATA[k].splice(i,1)[0],v=TX[k](x),meta=x.due||x.when||'';DATA[to].push(to==='tasks'?{text:v,due:meta,src:x.src}:to==='events'?{title:v,start:'',durationMin:60,when:meta,src:x.src}:{to:'',body:v,src:x.src});TAB=to;render(DATA,false);toast('Moved to '+to,before)}
+function del(k,i){const before=JSON.stringify(DATA);DATA[k].splice(i,1);render(DATA,false);toast('Deleted',before)}
+function edit(el,k,x){el.contentEditable='plaintext-only';if(el.contentEditable!=='plaintext-only')el.contentEditable='true';el.setAttribute('role','textbox');el.setAttribute('aria-label','Edit text');el.spellcheck=false;el.onblur=()=>{TXset(k,x,el.textContent.trim());save()};el.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();el.blur()}}}
+function acts(k,x,i){const w=h('div','acts'),s=h('button','ibtn','Source'),m=h('select','ibtn'),d=h('button','ibtn','Delete');s.setAttribute('aria-label','Show where this came from in your note');s.onclick=()=>paintSaid(x.src||TX[k](x));m.setAttribute('aria-label','Move to another list');m.append(new Option('Move…',''));KEYS.filter(z=>z!==k).forEach(z=>m.append(new Option(cap(z),z)));m.onchange=()=>m.value&&move(k,i,m.value);d.setAttribute('aria-label','Delete this item');d.onclick=()=>del(k,i);w.append(s,m,d);return w}
+function paintSaid(src){const p=$('#said'),t=S.text||'',q=(src||'').trim();p.textContent='';$('#saidCard').hidden=!t;const i=q?t.toLowerCase().indexOf(q.toLowerCase()):-1;if(i<0){p.textContent=t;if(q)toast('Couldn’t find that exact phrase in your note.');return}const m=h('mark','',t.slice(i,i+q.length));p.append(t.slice(0,i),m,t.slice(i+q.length));m.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'})}
+function paintTabs(){document.querySelectorAll('.tab').forEach((b,j)=>b.setAttribute('aria-selected',String(KEYS[j]===TAB)));document.querySelectorAll('.lane').forEach(L=>L.classList.toggle('on',L.dataset.k===TAB))}
+function renderHist(){const hb=$('#hist');hb.textContent='';S.hist.forEach(e=>{const b=h('button','btn',e.title);b.onclick=()=>{if(S.state==='listening'||S.state==='thinking')return;S.cur=e;S.text=e.text;TAB='tasks';render(JSON.parse(e.data),false);setState('done')};hb.append(b)});$('#foot').hidden=!S.hist.length}
+function reset(){$('#lanes').hidden=$('#tabs').hidden=$('#summary').hidden=$('#saidCard').hidden=true;$('#typed').value='';S.base=S.raw=S.interim='';S.cur=null;renderLive();status('');setState('idle')}
+$('#dock').onclick=()=>S.state==='done'?reset():$('#mic').onclick();
+/* understanding */
+async function process(text){setState('thinking');status('Sorting your note…');S.text=text;stages();let data;
+ try{sampleFn=sampleFn||await claude.use('sample');if(!sampleFn)throw 0;
+  const now=new Date(),tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const p=`Today is ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} (timezone ${tz}). The user dictated a messy voice note with filler words and self-corrections. Sort it into: tasks (short imperative to-dos), events (calendar items with a time; resolve relative dates to ISO using today's date), and messages (drafts the user intends to send, written in the user's first-person voice, brief and natural, with the recipient). Do not invent anything not in the note. Return ONLY JSON in this shape: {"tasks":[{"text":"","due":"","src":""}],"events":[{"title":"","start":"YYYY-MM-DDTHH:MM or empty","durationMin":60,"when":"human readable time","src":""}],"messages":[{"to":"","body":"","src":""}]}. For every item, src is the exact words copied from the note (max 10 words) that the item came from. If an item is both a task and a message, make it a message only.\n\nVoice note:\n"""${text}"""`;
+  data=await sampleFn.json(p);if(typeof data==='string')data=JSON.parse(data.replace(/```json|```/g,''))}
+ catch(e){data=heuristic(text);status('Claude wasn’t reachable, so I used a simple offline sort.')}
+ clearInterval(S.st);const en={title:text.split(/\s+/).slice(0,4).join(' ')+'…',text,data:''};S.hist.push(en);if(S.hist.length>8)S.hist.shift();S.cur=en;TAB='tasks';render(data);setState('done');navigator.vibrate&&navigator.vibrate([12,40,12]);if(S.state==='done'&&$('#status').textContent.startsWith('Sorting'))status('Sorted')}
+function heuristic(t){const o={tasks:[],events:[],messages:[]};
+ t.split(/(?<=[.!?])\s+|,\s+(?=and |also |oh |right )/i).map(s=>s.replace(/^(and|also|oh|right|okay so|so)\s+/i,'').trim()).filter(Boolean).forEach(s=>{
+  if(/\b(tell|text|message|email|ping|write to)\b/i.test(s))o.messages.push({to:(s.match(/\b(?:tell|email|ping|text|message)\s+([A-Z]\w+)/)||[])[1]||'',body:s});
+  else if(/\b(\d{1,2}(:\d\d)?\s?(am|pm)|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(s)&&/\b(meet|call|appointment|lunch|dinner|class|standup|dentist)\b/i.test(s))o.events.push({title:s,start:'',durationMin:60,when:(s.match(/\b(\w+day|tomorrow)?\s*(at )?\d{1,2}(:\d\d)?\s?(am|pm)\b/i)||[''])[0]});
+  else o.tasks.push({text:s,due:''})});return o}
+/* rendering */
+function h(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function lane(title,color,items,i,build){const L=h('section','lane');L.style.setProperty('--a',color);L.style.setProperty('--d',i*160+'ms');
+ const hd=h('div','lh');hd.append(h('span','dot'),h('h2','',title),h('span','n',items.length?String(items.length):''));L.append(hd);
+ if(!items.length)L.append(h('div','empty','Nothing here. Your note didn’t mention any.'));
+ items.forEach((x,j)=>{const e=build(x);e.style.setProperty('--i',j);L.append(e)});return L}
+const pad=n=>String(n).padStart(2,'0'), fmt=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'T'+pad(d.getHours())+pad(d.getMinutes())+'00';
+function render(d,anim=true){const a=k=>Array.isArray(d[k])?d[k]:[];DATA={tasks:a('tasks'),events:a('events'),messages:a('messages')};const box=$('#lanes'),T=DATA.tasks,E=DATA.events,M=DATA.messages;box.textContent='';box.classList.toggle('still',!anim);
+ const L1=lane('Tasks','var(--task)',T,0,x=>{const k='tasks',r=h('div','item'),b=h('button','chk');b.setAttribute('role','checkbox');b.setAttribute('aria-checked',String(!!x.done));b.setAttribute('aria-label','Mark done');b.onclick=()=>{x.done=!x.done;b.setAttribute('aria-checked',String(x.done));save()};
+  const t=h('div','tx'),s=h('span','',x.text||'');edit(s,k,x);t.append(s);if(x.due)t.append(h('span','sub','Due '+x.due));t.append(acts(k,x,T.indexOf(x)));r.append(b,t);return r});
+ const L2=lane('Calendar','var(--cal)',E,1,x=>{const k='events',r=h('div','item'),t=h('div','tx'),s=h('span','',x.title||''),w=h('input','when'),g=h('a','','Add to Google Calendar');edit(s,k,x);t.append(s);
+  w.type='datetime-local';w.value=(x.start||'').slice(0,16);w.setAttribute('aria-label','Event time');g.target='_blank';g.rel='noopener';
+  const upd=()=>{const st=w.value&&new Date(w.value),ok=st&&!isNaN(st);g.hidden=!ok;if(ok){x.start=w.value;const e=new Date(st.getTime()+(x.durationMin||60)*6e4);g.href='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(x.title||'Event')+'&dates='+fmt(st)+'/'+fmt(e)}save()};
+  w.onchange=upd;g.onclick=upd;upd();t.append(w);if(!w.value&&x.when)t.append(h('span','sub','Heard “'+x.when+'”. Set the exact time.'));t.append(g,acts(k,x,E.indexOf(x)));r.append(t);return r});
+ const L3=lane('Draft message','var(--msg)',M,2,x=>{const k='messages',r=h('div','item draft'),ta=h('textarea'),row=acts(k,x,M.indexOf(x)),b=h('button','ibtn','Copy');r.append(h('div','to',x.to?'To '+x.to:'Recipient not mentioned'));ta.value=x.body||'';ta.setAttribute('aria-label','Draft message');ta.oninput=()=>{x.body=ta.value;save()};
+  b.onclick=async()=>{try{await navigator.clipboard.writeText(ta.value)}catch(_){ta.select();document.execCommand('copy')}b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1500)};row.prepend(b);r.append(ta,row);return r});
+ [L1,L2,L3].forEach((L,j)=>{L.dataset.k=KEYS[j]});box.append(L1,L2,L3);
+ const n=[T.length,E.length,M.length],first=n.findIndex(v=>v);if(!n[KEYS.indexOf(TAB)])TAB=KEYS[first<0?0:first];
+ const tabs=$('#tabs');tabs.textContent='';KEYS.forEach((k,j)=>{const b=h('button','tab',cap(k)+' '+n[j]);b.setAttribute('role','tab');b.onclick=()=>{TAB=k;paintTabs()};tabs.append(b)});paintTabs();
+ $('#summary').textContent=n[0]+(n[0]===1?' task · ':' tasks · ')+n[1]+(n[1]===1?' event · ':' events · ')+n[2]+(n[2]===1?' message':' messages');
+ $('#summary').hidden=tabs.hidden=box.hidden=false;$('#typeBox').hidden=true;paintSaid();renderHist();save()}
+</script>
+</body>
+</html>
