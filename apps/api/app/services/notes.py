@@ -4,10 +4,11 @@ from anthropic import APIStatusError
 
 from ..db import Item, Note, User
 from .extract import extract
+from .providers import ProviderConfigurationError
 
 
 class SortingFailed(Exception):
-    """Claude could not sort the transcript (outage, bad API key, rate limit)."""
+    """The configured LLM provider could not sort the transcript."""
 
     def __init__(self, detail: str):
         super().__init__(detail)
@@ -15,6 +16,8 @@ class SortingFailed(Exception):
 
 def sorting_failure_detail(error: Exception) -> str:
     generic = "Couldn’t sort your note right now. Try again in a moment."
+    if isinstance(error, ProviderConfigurationError):
+        return str(error)
     if not isinstance(error, APIStatusError):
         return generic
 
@@ -31,7 +34,7 @@ def sorting_failure_detail(error: Exception) -> str:
 
 
 async def save_note(s, user: User, transcript: str, tz: str) -> Note:
-    """Sort a transcript with Claude and store it. Shared by the upload and live-caption routes."""
+    """Sort a transcript with the configured provider and store it."""
     try:
         sorted_ = await extract(transcript, tz)
     except Exception as e:

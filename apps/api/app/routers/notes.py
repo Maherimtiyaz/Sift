@@ -10,6 +10,7 @@ from ..db import Note, User
 from ..deps import current_user, db, limit
 from ..schemas import note_out
 from ..services.notes import SortingFailed, save_note
+from ..services.providers import DEMO_TRANSCRIPT, ProviderConfigurationError, is_demo_mode
 from ..services.transcribe import transcribe
 
 log = logging.getLogger("sift.notes")
@@ -24,13 +25,17 @@ async def create_note(audio: UploadFile | None = File(None), text: str | None = 
         ZoneInfo(tz)
     except Exception:
         raise HTTPException(422, "Unknown timezone")
-    if audio:
+    if is_demo_mode():
+        transcript = DEMO_TRANSCRIPT
+    elif audio:
         data = await audio.read(MAX_AUDIO + 1)
         if len(data) > MAX_AUDIO:
             raise HTTPException(413, "Recording is too long")
         suffix = os.path.splitext(audio.filename or "")[1] or ".webm"
         try:
             transcript = await transcribe(data, suffix)
+        except ProviderConfigurationError as e:
+            raise HTTPException(503, str(e))
         except Exception:
             log.exception("transcription failed")
             raise HTTPException(422, "Couldn’t read that audio. Try recording again.")

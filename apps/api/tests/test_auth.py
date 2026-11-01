@@ -45,4 +45,10 @@ def test_protected_routes_need_a_valid_token(client):
         for method, path in [("get", "/api/notes"), ("post", "/api/notes"), ("patch", "/api/items/1"),
                              ("delete", "/api/items/1"), ("get", "/api/google/status"), ("get", "/api/auth/me")]:
             assert getattr(client, method)(path, headers=headers).status_code == 401, (method, path)
-    assert client.get("/api/health").json() == {"ok": True}
+    health = client.get("/api/health").json()
+    assert health["ok"] is True and isinstance(health["demo_mode"], bool)
+
+
+def test_health_reports_demo_mode(client, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
+    assert client.get("/api/health").json() == {"ok": True, "demo_mode": True}

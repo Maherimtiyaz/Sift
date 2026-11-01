@@ -14,6 +14,7 @@ from ..db import User
 from ..deps import current_user, db, r, spend
 from ..schemas import note_out
 from ..services.notes import SortingFailed, save_note
+from ..services.providers import is_demo_mode
 from ..services.streaming import BYTES_PER_SEC, LiveTranscriber, make_runner
 
 log = logging.getLogger("sift.live")
@@ -35,6 +36,8 @@ async def ws_ticket(user: User = Depends(current_user)):
 async def live_note(ws: WebSocket, ticket: str = "", s=Depends(db)):
     origin = ws.headers.get("origin")
     if origin and origin.rstrip("/") not in ALLOWED:  # blocks pages on other sites from using this socket
+        return await ws.close(code=1008)
+    if is_demo_mode():
         return await ws.close(code=1008)
     uid = await r.getdel(f"wsticket:{ticket}") if ticket else None
     user = await s.get(User, uuid.UUID(uid)) if uid else None

@@ -24,7 +24,7 @@ async def current_user(authorization: str = Header(default=""), s=Depends(db)) -
 
 
 async def spend(user_id) -> bool:
-    """Count one expensive call (Whisper + Claude) against the user's hourly allowance of 60."""
+    """Count one note-processing call against the user's hourly allowance of 60."""
     key = f"rl:notes:{user_id}"
     n = await r.incr(key)
     if n == 1:

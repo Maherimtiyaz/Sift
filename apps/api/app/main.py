@@ -7,11 +7,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import allowed_origins
 from .routers import auth, google, items, live, notes
+from .services.providers import is_demo_mode, llm_provider, transcription_provider
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if os.getenv("WHISPER_PRELOAD", "").lower() == "true":  # load the live model now so the first session isn't slow
+    llm_provider()
+    transcription_provider()
+    if not is_demo_mode() and os.getenv("WHISPER_PRELOAD", "").lower() == "true":
+        # Live captions use local Whisper even when uploaded audio uses Groq.
         from .services.streaming import preload
 
         app.state.preload = asyncio.create_task(asyncio.to_thread(preload))
@@ -31,4 +35,4 @@ for r in (auth.router, notes.router, items.router, google.router, live.router):
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True}
+    return {"ok": True, "demo_mode": is_demo_mode()}

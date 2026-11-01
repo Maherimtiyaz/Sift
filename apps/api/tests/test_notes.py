@@ -2,6 +2,8 @@ import httpx
 import pytest
 
 from anthropic import BadRequestError
+from app.services.extract import extract
+from app.services.providers import DEMO_RESULT, DEMO_TRANSCRIPT
 
 
 def test_create_from_text_stores_items_and_timezone(client, alice, make_note):
@@ -21,6 +23,19 @@ def test_create_from_text_accepts_windows_browser_timezone(client, alice):
 def test_create_from_audio_uses_the_transcript(client, alice):
     r = client.post("/api/notes", headers=alice, data={"tz": "UTC"}, files={"audio": ("note.webm", b"bytes", "audio/webm")})
     assert r.status_code == 200 and r.json()["transcript"].startswith("dictated:")
+
+
+def test_demo_mode_ignores_input_and_returns_fixed_sample(client, alice, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
+    monkeypatch.setattr("app.services.notes.extract", extract)
+    r = client.post(
+        "/api/notes",
+        headers=alice,
+        data={"text": "private note contents must not be stored", "tz": "UTC"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["transcript"] == DEMO_TRANSCRIPT
+    assert r.json()["tasks"][0]["text"] == DEMO_RESULT["tasks"][0]["text"]
 
 
 def test_bad_input_is_rejected(client, alice):
