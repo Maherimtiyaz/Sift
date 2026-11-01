@@ -36,7 +36,7 @@ export const api = {
     call<{ link?: string }>(`/items/${id}/calendar`, json(start ? { start } : {})),
   patchItem: (id: number, body: ItemPatch) => call<ItemOut>(`/items/${id}`, { ...json(body), method: "PATCH" }),
   deleteItem: (id: number) => call<void>(`/items/${id}`, { method: "DELETE" }),
-  liveConfig: () => call<{ wsUrl: string }>("/live-config"),
+  liveConfig: () => call<{ wsUrl: string; demoMode: boolean }>("/live-config"),
   wsTicket: () => call<{ ticket: string }>("/ws-ticket", { method: "POST" }),
   googleStatus: () => call<{ connected: boolean; email: string | null }>("/google/status"),
   googleConnect: () => call<{ url: string }>("/google/connect"),

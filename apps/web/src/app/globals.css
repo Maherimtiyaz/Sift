@@ -64,6 +64,9 @@ button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{
 select.ibtn{appearance:auto;padding-right:6px}input.when:disabled{opacity:.7}
 .live{max-width:640px;margin:14px auto 0;padding:0 20px;text-align:center;font-size:19px;line-height:1.4;min-height:60px}
 .live i{font-style:normal;color:var(--mute)}.live .hint{color:var(--mute);font-size:15px}
+.demo-mode,.provider-status{width:fit-content;max-width:calc(100% - 32px);margin:14px auto 0;padding:8px 14px;border:1px solid var(--line);border-radius:999px;text-align:center;font-size:14px}
+.demo-mode{background:#ffefb8;color:#633f00;border-color:#e8c35e;font-weight:700}
+.provider-status{color:var(--mute)}
 .auth-nav{align-items:center}.auth-nav a{text-decoration:none}.auth-nav .nav-cta{padding:8px 15px;border:1px solid var(--ink);border-radius:999px;color:var(--bg);background:var(--ink)}
 .welcome{max-width:1080px;margin:0 auto;padding:clamp(52px,10vw,112px) 20px 96px}
 .welcome-hero{max-width:700px;margin:0 auto;text-align:center}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { Outfit, Syne } from "next/font/google";
+import DemoModeNotice from "@/components/DemoModeNotice";
 import LogoutButton from "@/components/LogoutButton";
 import { COOKIE } from "@/lib/session";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </nav>
           )}
         </header>
+        <DemoModeNotice />
         {children}
       </body>
     </html>
