@@ -48,6 +48,17 @@ The origin must match **exactly** what the browser shows: `https://app.example.c
 
 `WS_URL` is read when the web server runs, not when it is built, so you can build once and point it at any backend.
 
+### AI provider configuration
+
+Set `LLM_PROVIDER` and `TRANSCRIPTION_PROVIDER` on the **API service**, not in Vercel's web environment:
+
+- Hosted Groq: `LLM_PROVIDER=groq`, `TRANSCRIPTION_PROVIDER=groq`, and `GROQ_API_KEY`.
+- Anthropic note sorting: `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`; choose `groq` or `local` separately for transcription.
+- Local services: `LLM_PROVIDER=ollama` with `OLLAMA_BASE_URL`/`OLLAMA_MODEL`, and `TRANSCRIPTION_PROVIDER=local`. Live captions use local faster-whisper even when uploaded audio uses Groq.
+- Key-free fixed demo: set both providers to `mock`. The app shows a **DEMO MODE** label, ignores submitted note contents, and returns a fixed sample without calling AI services. Live captions are disabled.
+
+Keep provider keys server-side and out of the web deployment. Provider limits, model availability, and data handling are controlled by each provider; check its current account documentation and use sample or non-sensitive data for public demos.
+
 ## Option A: Render (API and web as two services)
 
 Render labels change over time; the settings below are what matters.
@@ -65,7 +76,12 @@ Render labels change over time; the settings below are what matters.
 ```
 DATABASE_URL=<Postgres internal URL, postgres:// form is fine>
 REDIS_URL=<Key Value internal URL>
-ANTHROPIC_API_KEY=...
+LLM_PROVIDER=groq
+TRANSCRIPTION_PROVIDER=groq
+GROQ_API_KEY=...
+GROQ_LLM_MODEL=llama-3.3-70b-versatile
+GROQ_WHISPER_MODEL=whisper-large-v3
+# Optional alternative for note sorting: LLM_PROVIDER=anthropic and ANTHROPIC_API_KEY=...
 JWT_SECRET=<python3 -c "import secrets; print(secrets.token_urlsafe(48))">
 TOKEN_ENCRYPTION_KEY=<python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())">
 FRONTEND_URL=https://app.example.com
@@ -116,7 +132,7 @@ cp .env.example .env
 nano .env
 ```
 
-In `.env` set: `ANTHROPIC_API_KEY`, `JWT_SECRET`, `TOKEN_ENCRYPTION_KEY`, and
+In `.env` set your AI providers and keys (the hosted Groq setup is shown above), `JWT_SECRET`, `TOKEN_ENCRYPTION_KEY`, and
 
 ```
 FRONTEND_URL=https://app.example.com
@@ -140,8 +156,8 @@ To update: `git pull`, then the same `up -d --build` command. Migrations run aut
 ## Check that it works
 
 ```bash
-curl https://api.example.com/api/health          # {"ok":true}
-curl https://app.example.com/api/live-config     # {"wsUrl":"wss://api.example.com"}
+curl https://api.example.com/api/health          # includes "ok" and "demo_mode"
+curl https://app.example.com/api/live-config     # includes "wsUrl" and "demoMode"
 ```
 
 Then in the browser: create an account, tap the orb and speak. In DevTools → Network → WS you should see a connection to `wss://api.example.com/api/ws/notes` and captions arriving. If you only see "Recording. Tap Stop when you're done", the WebSocket is not reachable; check `WS_URL`, and that `FRONTEND_URL` exactly equals the address in the browser bar.
@@ -162,15 +178,15 @@ Then in the browser: create an account, tap the orb and speak. In DevTools → N
 
 ## The standalone demo page
 
-`apps/demo/sift-demo.html` is a single file with no backend: the original animated demo. It can be hosted on any static host (Netlify, GitHub Pages, S3) as a marketing page. Outside Claude's own artifact viewer its sorting uses a simple built-in rule-based fallback instead of Claude, and live captions depend on the visitor's browser speech recognition (Chrome and Safari). Treat it as a visual demo, not the product.
+`apps/demo/sift-demo.html` is a single file with no backend: the original animated demo. It can be hosted on any static host (Netlify, GitHub Pages, S3) as a marketing page. Outside its original artifact viewer its sorting uses a simple built-in rule-based fallback instead of a hosted LLM, and live captions depend on the visitor's browser speech recognition (Chrome and Safari). Treat it as a visual demo, not the product.
 
 ## Manual steps and open items
 
 You must do yourself:
-- Create the Anthropic key, JWT secret and encryption key; fill `.env`.
+- Configure an AI provider and its key if required, create a JWT secret and encryption key, and fill `.env`.
 - Create the Google Cloud project and OAuth client (optional feature).
 - DNS records and domains; HTTPS (Render, Vercel and Caddy do it for you).
 - Set `ALLOW_SIGNUP=false` after creating your account.
 - Backups.
 
-Not built: the WhatsApp/Telegram bot, the weekly digest, password reset, email verification, server-side session revocation. Not verified by the author: Docker image builds, real Whisper/Claude/Google calls, and the browser UI. The CI workflow builds both Docker images on every push, which will surface Dockerfile problems.
+Not built: the WhatsApp/Telegram bot, the weekly digest, password reset, email verification, server-side session revocation. Not verified by the author: Docker image builds, real AI-provider/Google calls, and the browser UI. The CI workflow builds both Docker images on every push, which will surface Dockerfile problems.
