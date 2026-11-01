@@ -11,4 +11,5 @@ venv/
 next-env.d.ts
 *.zip
 *.log
+*.tsbuildinfo
 .DS_Store

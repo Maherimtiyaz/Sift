@@ -1,0 +1,20 @@
+# Single-server production: adds Caddy for HTTPS in front of the web app and the API.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# (Passing -f skips docker-compose.override.yml, so Postgres and Redis stay private.)
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment: [APP_DOMAIN, API_DOMAIN]
+    ports: ["80:80", "443:443"]
+    volumes: ["./deploy/Caddyfile:/etc/caddy/Caddyfile:ro", "caddy_data:/data", "caddy_config:/config"]
+    depends_on: [api, web]
+  api:
+    restart: unless-stopped
+  web:
+    restart: unless-stopped
+  db:
+    restart: unless-stopped
+  redis:
+    restart: unless-stopped
+volumes: {caddy_data: {}, caddy_config: {}}

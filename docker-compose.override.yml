@@ -1,0 +1,8 @@
+# Development only (Compose loads this file automatically). Publishes the database and Redis on your own
+# machine so you can run the API and the tests outside Docker. The default ports are already used in this
+# environment, so the dev override uses free local ports instead. Production: docker compose -f docker-compose.yml up -d
+services:
+  db:
+    ports: ["127.0.0.1:5439:5432"]
+  redis:
+    ports: ["127.0.0.1:6382:6379"]

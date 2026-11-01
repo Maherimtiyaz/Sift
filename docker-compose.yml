@@ -1,0 +1,29 @@
+# Full stack: Postgres, Redis, the API and the web app.   Run: docker compose up --build
+services:
+  db:
+    image: postgres:16
+    environment: {POSTGRES_USER: sift, POSTGRES_PASSWORD: sift, POSTGRES_DB: sift}
+    volumes: [pg:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sift"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+  redis:
+    image: redis:7
+  api:
+    build: ./apps/api
+    env_file: .env
+    ports: ["127.0.0.1:8002:8000"]   # reachable from your own machine only; a reverse proxy publishes it in production
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+    volumes: [whisper:/home/app/.cache]   # keeps the downloaded Whisper model between restarts
+  web:
+    build: ./apps/web
+    environment:
+      API_URL: http://api:8000                       # server to server, inside the compose network
+      WS_URL: ${WS_URL:-ws://localhost:8000}         # where the browser reaches the API for live captions
+    ports: ["127.0.0.1:3002:3000"]
+    depends_on: [api]
+volumes: {pg: {}, whisper: {}}
